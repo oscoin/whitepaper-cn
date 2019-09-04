@@ -1,0 +1,135 @@
+\begin{tikzpicture}[scale=0.96]
+    \usetikzlibrary{matrix}
+
+    \tikzset{
+        table/.style={
+            matrix of nodes,
+            row sep=-\pgflinewidth,
+            column sep=-\pgflinewidth,
+            anchor=center,
+            nodes={rectangle, draw=black, text width=7ex, align=center},
+            text depth=0.2ex,
+            text height=1.6ex,
+            nodes in empty cells
+        },
+        texto/.style={font=\footnotesize\sffamily},
+        title/.style={font=\footnotesize\sffamily}
+    }
+    \tikzset{
+        ledger/.style={
+            matrix of nodes,
+            row sep=-\pgflinewidth,
+            column sep=-\pgflinewidth,
+            anchor=center,
+            nodes={rectangle, draw=black, text width=32ex, align=center},
+            text depth=0.2ex,
+            text height=2ex,
+            nodes in empty cells
+        },
+        tx/.style={font=\footnotesize\sffamily},
+    }
+    \tikzset{edge from parent/.style={draw, <-}}
+
+    \tikzstyle{thick-arrow} = [thick, -latex]
+    \tikzstyle{proj-seed}   = [draw, double, fill=black!10, circle, minimum height=2em, minimum width=2em, node distance=2em];
+    \tikzstyle{proj-s}      = [draw, fill=black!10, circle, minimum height=2em, minimum width=2em, node distance=2em];
+    \tikzstyle{user-s}      = [draw, fill=black!4, circle, minimum height=2em, minimum width=2em, node distance=2em];
+    \tikzstyle{miner}       = [draw, fill=black!10, circle, minimum height=2em, minimum width=2em, node distance=2em];
+    \tikzstyle{proj-group}  = [draw, fill=white, rectangle, minimum height=3em, minimum width=3em, node distance=3em];
+    \tikzstyle{process}     = [draw, thick, fill=black!10, rectangle, minimum height=3em, minimum width=5em];
+    \tikzstyle{coinbase}    = [draw, fill=white, rectangle, minimum height=3em, minimum width=8em, node distance=10em];
+    \tikzstyle{pointer}     = [thin, dashed, -latex];
+
+    %
+    % Project dependency graph
+    %
+    \node[proj-s] (proj-a-4)  [] {\small{$P^4$}}
+        child { node[proj-s] (proj-a-2)  [] {\small{$P^2$}} }
+        child {
+            node[proj-s] (proj-a-3)  [] {\small{$P^3$}}
+                child { node[proj-s] (proj-a-1) [] {\small{$P^1$}} }
+        };
+
+    \node[user-s] (user-a) [left=of proj-a-2] {\small{$A^1$}};
+
+    \begin{scope}[on background layer]
+        \node (netgraph) [proj-group,
+            label={Network Graph ($\netgraph$)},
+            inner sep=10pt,
+            fit=(proj-a-1) (proj-a-2) (proj-a-3) (proj-a-4) (user-a)] {};
+    \end{scope}
+
+    %
+    % Ledger
+    %
+    \matrix[ledger, label={Ledger ($\ledger$)}, right=of netgraph] (ledger) {
+        |[tx]| $\tx{checkpoint}{P_1, \ldots, \{\depend(P_3)\}}$                       \\
+        |[tx]| $\tx{checkpoint}{P_2, \ldots, \{\depend(P_4)\}}$                       \\
+        |[tx]| $\tx{checkpoint}{P_3, \ldots, \{\depend(P_4)\}}$                       \\
+    };
+
+    %
+    % OSRANK
+    %
+    \node[process] (osrank) [below=of netgraph] {\osrank{}};
+
+    %
+    % Seed set projects
+    %
+    \node[proj-seed] (trusted-1)  [right=2cm of osrank]    {\small{$P^1_t$}};
+    \node[proj-seed] (trusted-2)  [right=of trusted-1]     {\small{$P^2_t$}};
+    \node[proj-seed] (trusted-3)  [right=of trusted-2]     {\small{$P^3_t$}};
+
+    \begin{scope}[on background layer]
+        \node [proj-group, label={Seed Set ($\seedset$)},
+            inner sep=10pt, fit=(trusted-1) (trusted-2) (trusted-3)] {}
+                edge [pointer] (osrank.east);
+    \end{scope}
+
+    \matrix[table, below=0.6cm of osrank] (weights) {
+        |[title]| \small{project} & |[title]| \small{$\omega(P)$} \\
+        \hline
+        |[texto]| $P^4$            & |[texto]| 0.5             \\
+        |[texto]| $P^3$            & |[texto]| 0.3             \\
+        |[texto]| $P^2$            & |[texto]| 0.1             \\
+        |[texto]| $P^1$            & |[texto]| 0.1             \\
+    };
+
+    %
+    % Distribution
+    %
+    \node[process, minimum width=10em] (distribution) [below=0.6cm of weights] {\textsf{Reward function ($\psi$)}};
+
+    % Coinbase
+    \node[coinbase, right of=distribution, node distance=12em] {\textsf{Coinbase} ($B_r$)} edge [pointer] (distribution.east);
+
+    %
+    % Projects receiving oscoin
+    %
+    \node[proj-s] (proj-b-1)  [below left=of distribution]    {\small{$P^1$}};
+    \node[proj-s] (proj-b-2)  [right=of proj-b-1]             {\small{$P^2$}};
+    \node[proj-s] (proj-b-3)  [right=of proj-b-2]             {\small{$P^3$}};
+    \node[proj-s] (proj-b-4)  [right=of proj-b-3]             {\small{$P^4$}};
+
+    % Miner
+    \node[miner]  (miner)     [left=of distribution, label=\Small{Operator}]          {\small{$M^1$}};
+
+    \begin{scope}[on background layer]
+        \draw[thick-arrow] (netgraph.south)              to    (osrank.north);
+        \draw[thick-arrow] (osrank.south)                to    (weights.north);
+        \draw[thick-arrow] (weights.south)               to    (distribution.north);
+        \draw[-latex,dashed] (ledger.west)               to    (netgraph.east);
+
+        % Distribution arrows
+        \draw[-latex] (distribution)              to    (proj-b-1);
+        \draw[-latex] (distribution)              to    (proj-b-2);
+        \draw[-latex] (distribution)              to    (proj-b-3);
+        \draw[-latex] (distribution)              to    (proj-b-4);
+        \draw[-latex] (distribution)              to    (miner);
+
+        % Owner arrows
+        \draw[->,dashed] (user-a) to[out=-15,in=-165] (proj-a-2);
+        \draw[->] (proj-a-2) to[out=165,in=15] (user-a);
+        \draw[->,dashed] (user-a) to[out=-55,in=170] (proj-a-1);
+    \end{scope}
+\end{tikzpicture}

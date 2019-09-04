@@ -1,0 +1,115 @@
+\section{智能合约}
+\label{s:smart-contracts}
+
+\newcommand{\handler}[1]{\textsc{\small#1}}
+
+\oscoin{}协议将资金转给了一个由可更新的智能合约控制的特殊账户：项目资金，以此来确保资金通过\oscoin{}财政系统进行分配，且项目以透明和负责的方式消费资金。除此之外，协议已经规定了项目资金账户只能由其智能合约控制。当贡献者决定向某项目贡献代码时，他们可以事先检查这个合约是否到位，是否可以进行合理更新，他们可以借此了解项目的奖励模型，确保他们可以正常收到报酬。
+
+\subsection{定义}
+智能合约是一套函数，或者说处理程序，会在常规转账处理过程中被调用。特定的转账，比如$\mathsf{transfer}$，使用智能合约来扩展其的行为，从而允许项目在金融、所有权模型或治理等方面进行配置并自动化运行。
+
+\subsection{接收 \oscoin{}}
+
+当一个项目接收到\oscoin{}时，与项目资金关联的只能合约就会被调用。智能合约内调用的特定处理程序取决于\oscoin{}的发送者。当\oscoin{}来自于财政系统时，将调用\handler{receiveReward}处理程序；当转账来自于别的来源时，\handler{receiveTransfer}将调用处理程序。这允许项目能够对来自财政系统的资金和收到的捐款有不同的处理方式
+
+\subsubsection{来自财政系统的奖励}
+
+\handler{receiveReward}处理程序每隔$\epoch$个区块被调用一次，以便项目得到奖励。这个函数有三个参数：p是包含项目数据的字典；$r \in \posnat$表示项目在本周期内收到的\oscoin{}奖励的数量；$k \in \mathbb{N}$是现在所处的周期。这个函数必须返回一个元组集合，内容为将一定数量的\oscoin{}分发给一组账户。这个集合称为分布\emph{distribution}。只要这个函数分发的\oscoin{}总数不超过$r$，函数就仍有效。任何没被分发的\oscoin{}都将被销毁。
+
+当一个项目首次注册时，\handler{receiveReward}将返回空分布，即，整个奖励$r$都将被销毁。
+
+\begin{algorithmic}[0]
+    \Procedure{receiveReward}{$p, r, k$}
+        \State \textbf{return} $\varnothing$
+    \EndProcedure
+\end{algorithmic}
+
+\noindent 一旦项目维护者决定了一个政策，他们可以发起一次转账来更新处理程序。例如，他们可以决定所有贡献者得到等量的未来奖励，并将余数存入项目基金。
+
+\begin{algorithmic}[0]
+    \Procedure{receiveReward}{$p, r, k$}
+        \State $n \gets |\prop{p}{contributors}|$
+        \State $q \gets r \sslash n$
+        \State $m \gets r \mod n$
+        \State $x \gets \{ (\prop{c}{addr}, q) \mid c \gets \prop{p}{contributors} \}$
+        \State \textbf{return} $x \cup \{ (\prop{p}{fund}, m) \}$
+    \EndProcedure
+\end{algorithmic}
+这让潜在的贡献者能十分容易地看清他们是否会因自己的贡献而得到奖励，以及奖励的份额。
+
+\subsubsection{转账与捐献}
+
+当收到一笔不是来自于财政系统的\oscoin{}转账时，\handler{receiveTransfer}处理程序就会被调用。这个程序需要与\handler{receiveReward}一样的三个参数，以及一个额外的参数$s$，来表示转账的发起者或来源账户。
+
+\medskip
+\begin{algorithmic}[0]
+    \Procedure{receiveTransfer}{$p, r, k, s$}
+        \State \textbf{return} $\{ (\prop{p}{fund}, r) \}$
+    \EndProcedure
+\end{algorithmic}
+与\handler{receiveReward}的例子类似，这个处理程序内也可以包括任意逻辑。例如，因为对项目的捐献将调用这个处理程序，所以这个项目可以靠这个程序将每个捐款一部分分给项目贡献者，剩下的给维护者。
+
+\subsection{合约处理程序的更新}
+
+更新项目智能合约需要使用
+\[
+    \tx{updatecontract}{P_a, h, c, \nu, v}
+\]
+转账。此类转账必须由项目维护者签名。参数中的$h$代表要被更新的处理程序，$c$代表新处理程序的代码，$v$ 是一组投票：维护者为此次升级收集道德一组签名，$v$是防止投票重放攻击而设置的随机数。
+
+更新合约可能影响既有的贡献者，比如，可能更改他们工作收到的奖励的份额。因此，决定了哪些处理程序可以被更新的规则也存储在项目合约内的\handler{updateContract}处理程序中。更新合约转账的有效条件会在该处理程序中标明。
+
+\handler{updateContract} 函数需要三个变量：$p$, 项目数据；$h$，被更新的处理程序的名字；$v$，对合约更新转账投票进行了签名的公钥列表。这个函数必须返回一个布尔值，表明该次更新是否有效。该处理程序的缺省代码如下：
+\begin{algorithmic}[0]
+    \Procedure{updateContract}{$p, h, v$}
+        \State \textbf{return} $\{ \prop{o}{addr} \mid o \gets \prop{p}{maintainers} \} \subseteq v$
+    \EndProcedure
+\end{algorithmic}
+在缺省代码中标明，所有现任维护者必须对所有合约更新进行签名。
+
+为了指定合约升级必须被大多数贡献者接收，该处理程序可以被升级为如下形式：
+\begin{algorithmic}[0]
+    \Procedure{updateContract}{$p, h, v$}
+        \State $h \gets |\prop{p}{contributors}| \sslash 2$
+        \State $v' \gets \{ \prop{c}{addr} \mid c \gets \prop{p}{contributors} \} \cap v$
+        \State \textbf{return} $|v'| > 1 + h$
+    \EndProcedure
+\end{algorithmic}
+如果处理程序返回$\top$，合约升级转账就被认为是有效的，转账中指定的处理程序$h$就被升级为新代码$c$。
+
+\subsection{特定花费}
+
+虽然大部分\oscoin{}的分配能以\handler{receiveReward}和\handler{receiveTransfer}处理程序的形式自动执行，但有时仍有手动将\oscoin{}从项目基金转移到另一个账户的需要。例如，在项目收到一笔大额捐赠的情况下，维护者们为了将来的组织花费，可能会想将一定量的资金转为储备。
+
+为了以特定方式将项目资金花掉，转账需要一组额外的参数。
+\[
+    \tx{transfer}{P_a, a, n, \nu, v} \mid n \in \posnat,
+\]
+在这里，$P_a$是支出项目资金的账户，$a$是接收资金的账户，n是\oscoin{}的数量，剩下的两个参数是一组投票。
+
+转账的验证由\handler{sendTransfer}处理程序执行。该处理程序与\handler{updateContract}的工作方式类似。例如，函数可能指定项目维护者可以在无需社区同意的情况下每月花费一小笔数目为$x$的\oscoin{}，而大额花费需要超过半数的贡献者和捐赠者同意。
+\medskip
+\begin{algorithmic}[0]
+    \Procedure{sendTransfer}{$p, n, a, v$}
+        \If{$\fn{spentThisEpoch}{p} + n > x$}
+            \State $h \gets |\prop{p}{contributors} \cup \prop{p}{donors}| \sslash 2$
+            \State $c' \gets \{ \prop{c}{addr} \mid c \gets \prop{p}{contributors} \}$
+            \State $d' \gets \{ \prop{d}{addr} \mid d \gets \prop{p}{donors} \}$
+            \State $v' \gets v \cap c' \cap d'$
+            \State \textbf{return} $|v'| > 1 + h$
+            \Else
+            \State \textbf{return} $\top$
+        \EndIf
+    \EndProcedure
+\end{algorithmic}
+
+\section*{}
+
+利用得当的话，智能合约就是社区的强大利器，这种强大体现在：
+
+\begin{enumerate}
+    \item 通过自动，明确的奖励分配与执行方式，为项目构建内在信任，实现透明性。
+    \item 可以让贡献者们在提交贡献前就对项目产生认知。
+    \item 可以以较低的风险移交项目以及\oscoin{}给新的维护者
+    \item 以社区分权的方式，为项目成员和协作者提供了稳定性，使得作恶更加困难。
+\end{enumerate}

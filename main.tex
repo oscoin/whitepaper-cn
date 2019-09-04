@@ -1,0 +1,159 @@
+\documentclass[a4paper, oneside, 8pt, final]{amsart}
+
+\usepackage{xeCJK}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+% \usepackage[babel=true,kerning=true]{microtype}
+
+\usepackage{amsmath, amssymb}
+\usepackage{eucal}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{mathtools}
+\usepackage{amsaddr}
+\usepackage{standalone}
+\usepackage{caption}
+
+\usepackage{stmaryrd}
+\usepackage[noend]{algpseudocode}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations.markings}
+\usetikzlibrary{arrows}
+\usetikzlibrary{fit}
+\usetikzlibrary{backgrounds}
+\usetikzlibrary{positioning}
+\usetikzlibrary{decorations.pathmorphing}
+\usetikzlibrary{arrows.meta}
+
+\def\osrank{\textsc{\small{osrank}}}
+\def\Oscoin{\textsc{\small{Oscoin}}}
+\def\oscoin{\textsc{\small{oscoin}}}
+\def\netgraph{\mathcal{N}}
+\def\accounts{\mathcal{A}}
+\def\state{\mathcal{S}}
+\def\ledger{\mathcal{L}}
+\def\contributors{\mathcal{C}}
+\def\projs{\mathcal{P}}
+\def\miners{\mathcal{M}}
+\def\registry{\mathcal{R}}
+\def\bal{\mathsf{bal}}
+\def\depend{\mathsf{depend}}
+\def\undepend{\mathsf{undepend}}
+\def\seedset{\Upsilon}
+\def\epoch{\kappa}
+\def\pagerank{PageRank}
+\def\protocol{\Phi}
+
+\newcommand{\tuple}[1]{\langle#1\rangle}
+\newcommand{\mathsc}[1]{\text{\normalfont\scshape#1}}
+\newcommand{\dep}{\xrightharpoondown[e]{d}}
+\newcommand{\tx}[2]{\mathsf{#1}\lparen#2\rparen}
+\newcommand{\field}[2]{#1_{\mathsf{#2}}}
+\newcommand{\fn}[2]{\operatorname{#1}(#2)}
+\newcommand{\prop}[2]{#1.{\mathrm{#2}}}
+
+\newcommand*\eg{e.g.\ }
+\newcommand*\ie{i.e.\ }
+
+\algrenewcommand\algorithmicprocedure{\textbf{handler}}
+
+% No paragraph indentation after section headers.
+\makeatletter
+\let\@afterindenttrue\@afterindentfalse
+\makeatother
+
+\newenvironment{fig}
+  {\par\noindent\minipage{\linewidth}}
+  {\endminipage\bigskip}
+
+\newenvironment{epigraph}[2][]
+{\leftskip=1cm \def\epigraph@author{#2} \smallskip\itshape}
+{\par\vspace{0.5em}\normalfont\hfill---\ \Small\epigraph@author\hspace*{0.2cm}\par\medskip}
+\makeatother
+
+\setlist[description]{leftmargin=0.8cm, labelindent=\parindent}
+\setlist[itemize]{leftmargin=0.8cm, labelindent=\parindent}
+\setlist[enumerate]{leftmargin=0.8cm, labelindent=\parindent}
+
+\setlength{\textwidth}{\paperwidth}
+\addtolength{\textwidth}{-4cm}
+\setlength{\textheight}{\paperheight}
+\addtolength{\textheight}{-4cm}
+\addtolength{\footskip}{\baselineskip}
+
+\raggedcolumns
+\calclayout
+
+\makeatletter
+\let\@wraptoccontribs\wraptoccontribs
+\makeatother
+
+\begin{document}
+
+\title[open source coin]{open source coin \\ \vspace{0.5em}\Small{开源社区的信任和可持续性} \\ {\tiny Draft 4.0}}
+\author{\Small Alexis Sellier\textsuperscript{$\dagger$} \qquad Eleftherios Diakomichalis\textsuperscript{$\dagger$} \qquad James Haydon\textsuperscript{$\dagger$}}
+\date{February 2019}
+
+\thanks{\textsuperscript{$\dagger$}Monadic, \texttt{\{alexis,ele,james\}@monadic.xyz}}
+
+\begin{abstract}
+开源运动的成功植根于点对点的分布态势和个体与个体的协作耦合。开源，诚然已从软件开发的理想主义孤篱生长成行业标准的高阁，但缺乏可持续的融资手段仍是横亘在此的负重。在这里，我们提议采用点对点协议创造的开源社区货币(\textsc{oscoin})，帮助我们一同开创可持续的，自由的开源软件经济。
+\end{abstract}
+
+\maketitle
+
+\setlength{\columnsep}{1cm}
+\begin{multicols}{2}
+
+\input{sections/01-background.tex}
+\input{sections/02-oscoin.tex}
+\input{sections/03-osrank.tex}
+\input{sections/04-ledger.tex}
+\input{sections/05-smart-contracts.tex}
+\columnbreak
+\input{sections/06-applications.tex}
+\pagebreak
+\input{sections/07-future-work.tex}
+
+\section*{致谢}
+感谢Sam Hart帮助解决本文中的一些核心问题，谢谢他给出的宝贵想法与意见。感谢Aaron Levin在最初构思\oscoin{}时发人深省的一些讨论和做出的贡献。最后由衷感谢Monadic团队和我们的同事，你们对这项工作给予的支持与反馈是无价的。
+
+\begin{thebibliography}{9}
+
+\bibitem{bitcoin} Nakamoto, Satoshi. Bitcoin: A Peer-to-Peer Electronic Cash
+  System. May 2009
+
+\bibitem{ethereum} Wood, Gavin. Ethereum: A Secure Decentralised Generalised
+  Transaction Ledger. December 2018
+
+\bibitem{filecoin} Protocol Labs. Filecoin: A Decentralized Storage Network.
+  July 2017
+
+\bibitem{roads and bridges} Eghbal, Nadia. Roads and Bridges. The Unseen labor
+  behind our digital infrastructure. July 2016.
+
+\bibitem{pagerank} Brin, S.; Page, L. (1998). The anatomy of a
+  large-scale hypertextual Web search engine (PDF). \emph{Computer Networks
+  and ISDN Systems.} 30: 107–117.
+
+\bibitem{pagerank-sybil} Cheng, A. and Friedman, E. 2006. Manipulability of
+  PageRank under Sybil strategies. In First Workshop on the Economics of
+  Networked Systems (NetEcon06).
+
+\bibitem{trustrank} Z. Gyöngyi, H. Garcia-Molina, J. Pedersen: Combating Web
+  Spam with TrustRank
+
+\bibitem{incr pagerank} Bahmani, Bahman and Chowdhury, Abdur and Goel,
+  Ashish. Fast Incremental and Personalized PageRank. Proc. VLDB
+  Endow. December 2010.
+
+\bibitem{nix} Dolstra, E., de Jonge, M. and Visser, E. Nix: A Safe and
+  Policy-Free System for Software Deployment. In Damon, L. (Ed.), 18th Large
+  Installation System Administration Conference (LISA '04), pages 79–92, Atlanta,
+  Georgia, USA. USENIX, November 2004.
+
+\end{thebibliography}
+
+\end{multicols}
+\end{document}
